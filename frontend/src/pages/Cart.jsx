@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { toast } from "react-toastify";
@@ -7,115 +7,78 @@ import API from "../api/axios";
 const Cart = () => {
   const { cart, fetchCart, removeFromCart, clearCart } = useCart();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchCart();
-  }, []);
+  }, [fetchCart]);
 
-  const total = cart.reduce(
+  const total = (cart || []).reduce(
     (sum, item) => sum + (item.product?.price || 0) * item.quantity,
     0,
   );
 
-  const handleRazorpayCheckout = async () => {
-    // ── Guard: check Razorpay script is loaded ──────────────
-    if (!window.Razorpay) {
-      toast.error("Payment system not loaded. Please refresh the page.");
-      return;
-    }
-
-    // ── Guard: check env key exists ─────────────────────────
-    if (!import.meta.env.VITE_RAZORPAY_KEY_ID) {
-      toast.error("Razorpay key missing. Check your .env file.");
+  const handleCheckout = async () => {
+    if (!cart || cart.length === 0) {
+      toast.error("Your cart is empty");
       return;
     }
 
     try {
-      // ✅ Fixed URL — removed extra /api prefix
-      const { data: rzpOrder } = await API.post("/payment/create-order", {
-        amount: total,
+      setLoading(true);
+
+      await API.post("/orders/place", {
+        shippingAddress: {
+          address: "123 Main St",
+          city: "Delhi",
+          postalCode: "110001",
+        },
+        paymentMethod: "Razorpay",
       });
 
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: rzpOrder.amount,
-        currency: "INR",
-        name: "ShopEasy",
-        order_id: rzpOrder.id,
-
-        handler: async function (response) {
-          try {
-            // Place order after successful payment
-            await API.post("/orders/place", {
-              shippingAddress: {
-                address: "123 Main St",
-                city: "Delhi",
-                postalCode: "110001",
-              },
-              paymentMethod: "Razorpay",
-            });
-
-            await clearCart();
-            toast.success("Payment successful! Order placed 🎉");
-            navigate("/orders");
-          } catch (err) {
-            // Payment went through but order failed
-            toast.error("Order saving failed. Contact support.");
-          }
-        },
-
-        // ✅ Handle user closing the payment popup
-        modal: {
-          ondismiss: function () {
-            toast.info("Payment cancelled.");
-          },
-        },
-
-        theme: { color: "#3399cc" },
-      };
-
-      const rzp = new window.Razorpay(options);
-
-      // ✅ Handle payment errors (card declined, etc.)
-      rzp.on("payment.failed", function (response) {
-        toast.error(`Payment failed: ${response.error.description}`);
-      });
-
-      rzp.open();
+      await clearCart();
+      toast.success("Order placed successfully! 🎉");
+      navigate("/orders");
     } catch (err) {
-      // ✅ Better error message from server
-      toast.error(
-        err.response?.data?.message || "Payment failed. Please try again.",
-      );
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to place order");
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (cart.length === 0)
+  if (!cart || cart.length === 0) {
     return (
       <div className="empty-cart">
         <h2>Your cart is empty</h2>
         <button onClick={() => navigate("/")}>Shop Now</button>
       </div>
     );
+  }
 
   return (
     <div className="cart-page">
       <h1>Your Cart</h1>
 
       {cart.map((item) => (
-        <div key={item.product?._id} className="cart-item">
-          <img src={item.product?.image} alt={item.product?.name} />
+        <div key={item.product?._id || item._id} className="cart-item">
+          <img
+            src={item.product?.image || "/placeholder.png"}
+            alt={item.product?.name || "Product"}
+          />
+
           <div>
-            <h3>{item.product?.name}</h3>
+            <h3>{item.product?.name || "Unnamed Product"}</h3>
             <p>
-              ₹{item.product?.price} × {item.quantity}
+              ₹{item.product?.price || 0} × {item.quantity}
             </p>
             <p>
               <strong>
-                ₹{(item.product?.price * item.quantity).toLocaleString()}
+                ₹{((item.product?.price || 0) * item.quantity).toLocaleString()}
               </strong>
             </p>
           </div>
+
           <button
             onClick={() => removeFromCart(item.product?._id)}
             className="btn-remove"
@@ -127,8 +90,13 @@ const Cart = () => {
 
       <div className="cart-summary">
         <h2>Total: ₹{total.toLocaleString()}</h2>
-        <button onClick={handleRazorpayCheckout} className="btn-checkout">
-          Pay with Razorpay
+
+        <button
+          onClick={handleCheckout}
+          className="btn-checkout"
+          disabled={loading}
+        >
+          {loading ? "Placing Order..." : "Place Order"}
         </button>
       </div>
     </div>
