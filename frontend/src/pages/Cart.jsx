@@ -17,21 +17,76 @@ const Cart = () => {
     0,
   );
 
-  const handleCheckout = async () => {
+  const handleRazorpayCheckout = async () => {
+    // ── Guard: check Razorpay script is loaded ──────────────
+    if (!window.Razorpay) {
+      toast.error("Payment system not loaded. Please refresh the page.");
+      return;
+    }
+
+    // ── Guard: check env key exists ─────────────────────────
+    if (!import.meta.env.VITE_RAZORPAY_KEY_ID) {
+      toast.error("Razorpay key missing. Check your .env file.");
+      return;
+    }
+
     try {
-      await API.post("/orders/place", {
-        shippingAddress: {
-          address: "123 Main St",
-          city: "Delhi",
-          postalCode: "110001",
-        },
-        paymentMethod: "Razorpay",
+      // ✅ Fixed URL — removed extra /api prefix
+      const { data: rzpOrder } = await API.post("/payment/create-order", {
+        amount: total,
       });
-      await clearCart();
-      toast.success("Order placed successfully! 🎉");
-      navigate("/orders");
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: rzpOrder.amount,
+        currency: "INR",
+        name: "ShopEasy",
+        order_id: rzpOrder.id,
+
+        handler: async function (response) {
+          try {
+            // Place order after successful payment
+            await API.post("/orders/place", {
+              shippingAddress: {
+                address: "123 Main St",
+                city: "Delhi",
+                postalCode: "110001",
+              },
+              paymentMethod: "Razorpay",
+            });
+
+            await clearCart();
+            toast.success("Payment successful! Order placed 🎉");
+            navigate("/orders");
+          } catch (err) {
+            // Payment went through but order failed
+            toast.error("Order saving failed. Contact support.");
+          }
+        },
+
+        // ✅ Handle user closing the payment popup
+        modal: {
+          ondismiss: function () {
+            toast.info("Payment cancelled.");
+          },
+        },
+
+        theme: { color: "#3399cc" },
+      };
+
+      const rzp = new window.Razorpay(options);
+
+      // ✅ Handle payment errors (card declined, etc.)
+      rzp.on("payment.failed", function (response) {
+        toast.error(`Payment failed: ${response.error.description}`);
+      });
+
+      rzp.open();
     } catch (err) {
-      toast.error("Failed to place order");
+      // ✅ Better error message from server
+      toast.error(
+        err.response?.data?.message || "Payment failed. Please try again.",
+      );
     }
   };
 
@@ -46,6 +101,7 @@ const Cart = () => {
   return (
     <div className="cart-page">
       <h1>Your Cart</h1>
+
       {cart.map((item) => (
         <div key={item.product?._id} className="cart-item">
           <img src={item.product?.image} alt={item.product?.name} />
@@ -55,7 +111,9 @@ const Cart = () => {
               ₹{item.product?.price} × {item.quantity}
             </p>
             <p>
-              <strong>₹{item.product?.price * item.quantity}</strong>
+              <strong>
+                ₹{(item.product?.price * item.quantity).toLocaleString()}
+              </strong>
             </p>
           </div>
           <button
@@ -66,38 +124,11 @@ const Cart = () => {
           </button>
         </div>
       ))}
+
       <div className="cart-summary">
         <h2>Total: ₹{total.toLocaleString()}</h2>
-        <button onClick=
-        {
-const handleRazorpayCheckout = async () => {
-  const { data: rzpOrder } = await API.post('/api/payment/create-order', { amount: total });
-
-  const options = {
-    key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-    amount: rzpOrder.amount,
-    currency: 'INR',
-    name: 'ShopEasy',
-    order_id: rzpOrder.id,
-    handler: async function (response) {
-      // Payment success — place the order
-      await API.post('/orders/place', {
-        shippingAddress: { address: '123 Main St', city: 'Delhi', postalCode: '110001' },
-        paymentMethod: 'Razorpay',
-      });
-      await clearCart();
-      toast.success('Payment successful! Order placed 🎉');
-      navigate('/orders');
-    },
-    theme: { color: '#3399cc' },
-  };
-
-  const rzp = new window.Razorpay(options);
-  rzp.open();
-};
-        }
-className="btn-checkout">
-          Place Order
+        <button onClick={handleRazorpayCheckout} className="btn-checkout">
+          Pay with Razorpay
         </button>
       </div>
     </div>
