@@ -40,7 +40,7 @@ const Cart = () => {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: rzpOrder.amount,
         currency: "INR",
-        name: "ShopEasy",
+        name: "ShopCU",
         order_id: rzpOrder.id,
 
         handler: async function (response) {
