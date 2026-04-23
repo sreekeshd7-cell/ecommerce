@@ -30,8 +30,8 @@ const authRoutes = require("./routes/authRoutes");
 const productRoutes = require("./routes/productRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+// server.js — add this with your other routes
 const paymentRoutes = require("./routes/paymentRoutes");
-
 // Tell Express to use these routes with a base path
 app.use("/api/auth", authRoutes); // e.g., POST /api/auth/register
 app.use("/api/products", productRoutes); // e.g., GET /api/products
@@ -47,6 +47,11 @@ app.get("/", (req, res) => {
 
 // ─── START SERVER ──────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== "production") {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  });
+}
+
+// Export the Express API for Vercel Serverless
+module.exports = app;

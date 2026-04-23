@@ -27,7 +27,7 @@ const Cart = () => {
     try {
       setLoading(true);
 
-      const { data: rzpOrder } = await API.post("/api/payment/create-order", {
+      const { data: rzpOrder } = await API.post("/payment/create-order", {
         amount: total * 100,
       });
 
@@ -45,7 +45,7 @@ const Cart = () => {
 
         handler: async function (response) {
           try {
-            await API.post("/api/payment/verify", response);
+            await API.post("/payment/verify", response);
 
             await API.post("/orders/place", {
               shippingAddress: address,
