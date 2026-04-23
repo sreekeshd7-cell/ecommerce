@@ -16,7 +16,7 @@ const generateToken = (id) => {
 // POST /api/auth/register
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, mobileNumber, address } = req.body;
 
     // Check if user already exists
     const userExists = await User.findOne({ email });
@@ -25,7 +25,7 @@ const registerUser = async (req, res) => {
     }
 
     // Create new user (password will be hashed by model middleware)
-    const user = await User.create({ name, email, password });
+    const user = await User.create({ name, email, password, mobileNumber, address });
 
     // Return user info + token
     res.status(201).json({
@@ -33,6 +33,8 @@ const registerUser = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      mobileNumber: user.mobileNumber,
+      address: user.address,
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -56,6 +58,8 @@ const loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        mobileNumber: user.mobileNumber,
+        address: user.address,
         token: generateToken(user._id),
       });
     } else {

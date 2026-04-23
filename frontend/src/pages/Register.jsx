@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 
 const Register = () => {
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", mobileNumber: "", address: "" });
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -55,6 +55,23 @@ const Register = () => {
             value={form.password}
             onChange={handleChange}
             minLength={6}
+            required
+          />
+          <input
+            name="mobileNumber"
+            type="tel"
+            placeholder="Mobile Number (10 digits)"
+            value={form.mobileNumber}
+            onChange={handleChange}
+            pattern="\d{10}"
+            title="Mobile number must be exactly 10 digits"
+            required
+          />
+          <input
+            name="address"
+            placeholder="Address"
+            value={form.address}
+            onChange={handleChange}
             required
           />
           <button type="submit" disabled={loading}>

@@ -1,7 +1,7 @@
 // src/components/Navbar.jsx
 
 import { Link, useNavigate } from "react-router-dom";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { ThemeContext } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -11,11 +11,14 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const { cartCount } = useCart();
   const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
+
+  const closeMenu = () => setIsMenuOpen(false);
 
   return (
     <nav className="navbar">
@@ -24,27 +27,36 @@ const Navbar = () => {
         ShopCU
       </Link>
 
-      <div className="nav-links">
+      <div style={{ position: "relative", display: "flex", gap: "10px", alignItems: "center" }}>
         <button onClick={toggleTheme} className="btn-theme-toggle">
           {theme === "light" ? "Dark Mode" : "Light Mode"}
         </button>
 
-        <Link to="/">Home</Link>
+        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="btn-theme-toggle">
+          Menu ☰
+        </button>
 
-        {user ? (
-          <>
-            <Link to="/cart">Cart ({cartCount})</Link>
-            <Link to="/orders">My Orders</Link>
-            {user.role === "admin" && <Link to="/admin">Admin</Link>}
-            <button onClick={handleLogout} className="btn-logout">
-              Logout
-            </button>
-          </>
-        ) : (
-          <>
-            <Link to="/login">Login</Link>
-            <Link to="/register">Register</Link>
-          </>
+        {isMenuOpen && (
+          <div className="dropdown-menu">
+            <Link to="/" onClick={closeMenu}>Home</Link>
+
+            {user ? (
+              <>
+                <Link to="/profile" onClick={closeMenu}>My Profile</Link>
+                <Link to="/cart" onClick={closeMenu}>Cart ({cartCount})</Link>
+                <Link to="/orders" onClick={closeMenu}>My Orders</Link>
+                {user.role === "admin" && <Link to="/admin" onClick={closeMenu}>Admin</Link>}
+                <button onClick={() => { closeMenu(); handleLogout(); }} className="btn-logout" style={{ marginTop: '10px' }}>
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" onClick={closeMenu}>Login</Link>
+                <Link to="/register" onClick={closeMenu}>Register</Link>
+              </>
+            )}
+          </div>
         )}
       </div>
     </nav>

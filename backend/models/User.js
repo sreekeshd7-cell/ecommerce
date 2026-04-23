@@ -19,6 +19,15 @@ const userSchema = new mongoose.Schema(
       required: [true, "Password is required"],
       minlength: 6,
     },
+    mobileNumber: {
+      type: String,
+      required: [true, "Mobile number is required"],
+      match: [/^\d{10}$/, "Mobile number must be exactly 10 digits"],
+    },
+    address: {
+      type: String,
+      required: [true, "Address is required"],
+    },
     role: {
       type: String,
       enum: ["user", "admin"],
