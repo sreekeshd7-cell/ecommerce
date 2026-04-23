@@ -18,30 +18,62 @@ const Cart = () => {
     0,
   );
 
-  const handleCheckout = async () => {
-    if (!cart || cart.length === 0) {
-      toast.error("Your cart is empty");
-      return;
-    }
-
+  const handleRazorpayCheckout = async () => {
     try {
       setLoading(true);
 
-      await API.post("/orders/place", {
-        shippingAddress: {
-          address: "123 Main St",
-          city: "Delhi",
-          postalCode: "110001",
-        },
-        paymentMethod: "Razorpay",
+      const { data: rzpOrder } = await API.post("/api/payment/create-order", {
+        amount: total * 100,
       });
 
-      await clearCart();
-      toast.success("Order placed successfully! 🎉");
-      navigate("/orders");
+      if (!window.Razorpay) {
+        toast.error("Razorpay SDK failed to load");
+        return;
+      }
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: rzpOrder.amount,
+        currency: "INR",
+        name: "ShopEasy",
+        order_id: rzpOrder.id,
+
+        handler: async function (response) {
+          try {
+            await API.post("/api/payment/verify", response);
+
+            await API.post("/orders/place", {
+              shippingAddress: {
+                address: "123 Main St",
+                city: "Delhi",
+                postalCode: "110001",
+              },
+              paymentMethod: "Razorpay",
+            });
+
+            await clearCart();
+            toast.success("Payment successful! Order placed 🎉");
+            navigate("/orders");
+          } catch (err) {
+            console.error(err);
+            toast.error("Payment verification failed");
+          }
+        },
+
+        prefill: {
+          name: "Customer Name",
+          email: "customer@example.com",
+          contact: "9999999999",
+        },
+
+        theme: { color: "#3399cc" },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.message || "Failed to place order");
+      toast.error("Failed to initiate payment");
     } finally {
       setLoading(false);
     }
@@ -92,11 +124,11 @@ const Cart = () => {
         <h2>Total: ₹{total.toLocaleString()}</h2>
 
         <button
-          onClick={handleCheckout}
+          onClick={handleRazorpayCheckout}
           className="btn-checkout"
           disabled={loading}
         >
-          {loading ? "Placing Order..." : "Place Order"}
+          {loading ? "Processing..." : "Pay with Razorpay"}
         </button>
       </div>
     </div>
