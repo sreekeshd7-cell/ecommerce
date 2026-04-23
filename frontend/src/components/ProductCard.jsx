@@ -17,7 +17,7 @@ const ProductCard = ({ product }) => {
     try {
       await addToCart(product._id);
       toast.success(`${product.name} added to cart!`);
-    } catch (err) {
+    } catch {
       toast.error("Failed to add to cart");
     }
   };

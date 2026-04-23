@@ -30,12 +30,14 @@ const authRoutes = require("./routes/authRoutes");
 const productRoutes = require("./routes/productRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
 
 // Tell Express to use these routes with a base path
 app.use("/api/auth", authRoutes); // e.g., POST /api/auth/register
 app.use("/api/products", productRoutes); // e.g., GET /api/products
 app.use("/api/cart", cartRoutes); // e.g., POST /api/cart/add
 app.use("/api/orders", orderRoutes); // e.g., POST /api/orders/place
+app.use("/api/payment", paymentRoutes); // e.g., POST /api/payment/create-order
 
 // ─── DEFAULT ROUTE ─────────────────────────────────────────────
 // Test route — open browser and go to http://localhost:5000

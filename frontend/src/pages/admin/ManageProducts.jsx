@@ -19,7 +19,7 @@ const ManageProducts = () => {
   };
 
   useEffect(() => {
-    fetchProducts();
+    fetchProducts(); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
 
   const handleChange = (e) =>
@@ -50,7 +50,7 @@ const ManageProducts = () => {
       await API.delete(`/products/${id}`);
       toast.success("Product deleted!");
       fetchProducts();
-    } catch (err) {
+    } catch {
       toast.error("Failed to delete");
     }
   };

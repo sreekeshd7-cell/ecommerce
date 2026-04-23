@@ -8,6 +8,11 @@ const Cart = () => {
   const { cart, fetchCart, removeFromCart, clearCart } = useCart();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [address, setAddress] = useState({
+    address: "",
+    city: "",
+    postalCode: "",
+  });
 
   useEffect(() => {
     fetchCart();
@@ -43,11 +48,7 @@ const Cart = () => {
             await API.post("/api/payment/verify", response);
 
             await API.post("/orders/place", {
-              shippingAddress: {
-                address: "123 Main St",
-                city: "Delhi",
-                postalCode: "110001",
-              },
+              shippingAddress: address,
               paymentMethod: "Razorpay",
             });
 
@@ -123,10 +124,41 @@ const Cart = () => {
       <div className="cart-summary">
         <h2>Total: ₹{total.toLocaleString()}</h2>
 
+        <div className="address-form">
+          <h3>Shipping Address</h3>
+          <input
+            type="text"
+            placeholder="Address"
+            value={address.address}
+            onChange={(e) =>
+              setAddress({ ...address, address: e.target.value })
+            }
+            required
+          />
+          <input
+            type="text"
+            placeholder="City"
+            value={address.city}
+            onChange={(e) => setAddress({ ...address, city: e.target.value })}
+            required
+          />
+          <input
+            type="text"
+            placeholder="Postal Code"
+            value={address.postalCode}
+            onChange={(e) =>
+              setAddress({ ...address, postalCode: e.target.value })
+            }
+            required
+          />
+        </div>
+
         <button
           onClick={handleRazorpayCheckout}
           className="btn-checkout"
-          disabled={loading}
+          disabled={
+            loading || !address.address || !address.city || !address.postalCode
+          }
         >
           {loading ? "Processing..." : "Pay with Razorpay"}
         </button>
