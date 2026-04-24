@@ -24,8 +24,13 @@ const ProductDetail = () => {
       toast.error("Please login first");
       return;
     }
-    await addToCart(product._id);
-    toast.success("Added to cart!");
+    try {
+      await addToCart(product._id);
+      toast.success("Added to cart!");
+    } catch (error) {
+      console.error("Add to cart error:", error);
+      toast.error("Failed to add to cart");
+    }
   };
 
   if (!product) return <div className="loading">Loading...</div>;
