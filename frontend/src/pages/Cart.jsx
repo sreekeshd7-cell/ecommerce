@@ -23,61 +23,8 @@ const Cart = () => {
     0,
   );
 
-  const handleRazorpayCheckout = async () => {
-    try {
-      setLoading(true);
-
-      const { data: rzpOrder } = await API.post("/payment/create-order", {
-        amount: total * 100,
-      });
-
-      if (!window.Razorpay) {
-        toast.error("Razorpay SDK failed to load");
-        return;
-      }
-
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: rzpOrder.amount,
-        currency: "INR",
-        name: "ShopCU",
-        order_id: rzpOrder.id,
-
-        handler: async function (response) {
-          try {
-            await API.post("/payment/verify", response);
-
-            await API.post("/orders/place", {
-              shippingAddress: address,
-              paymentMethod: "Razorpay",
-            });
-
-            await clearCart();
-            toast.success("Payment successful! Order placed 🎉");
-            navigate("/orders");
-          } catch (err) {
-            console.error(err);
-            toast.error("Payment verification failed");
-          }
-        },
-
-        prefill: {
-          name: "Customer Name",
-          email: "customer@example.com",
-          contact: "9999999999",
-        },
-
-        theme: { color: "#3399cc" },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to initiate payment");
-    } finally {
-      setLoading(false);
-    }
+  const handleMockCheckout = () => {
+    navigate("/payment/mock", { state: { address, total } });
   };
 
   if (!cart || cart.length === 0) {
@@ -154,13 +101,13 @@ const Cart = () => {
         </div>
 
         <button
-          onClick={handleRazorpayCheckout}
+          onClick={handleMockCheckout}
           className="btn-checkout"
           disabled={
             loading || !address.address || !address.city || !address.postalCode
           }
         >
-          {loading ? "Processing..." : "Pay with Razorpay"}
+          {loading ? "Processing..." : "Checkout & Pay"}
         </button>
       </div>
     </div>
