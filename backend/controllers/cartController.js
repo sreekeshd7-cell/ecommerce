@@ -2,6 +2,7 @@
 // Cart is stored inside the User document
 
 const User = require("../models/User");
+const Product = require("../models/Product");
 
 // GET /api/cart — Get user's cart
 const getCart = async (req, res) => {
@@ -18,6 +19,16 @@ const getCart = async (req, res) => {
 const addToCart = async (req, res) => {
   try {
     const { productId, quantity } = req.body;
+    const addQuantity = quantity || 1;
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    if (product.stock < addQuantity) {
+      return res.status(400).json({ message: "Insufficient stock" });
+    }
+
     const user = await User.findById(req.user._id);
 
     // Check if this product is already in the cart
@@ -27,11 +38,15 @@ const addToCart = async (req, res) => {
 
     if (existingItem) {
       // If already in cart, increase the quantity
-      existingItem.quantity += quantity || 1;
+      existingItem.quantity += addQuantity;
     } else {
       // Otherwise, add new item to cart
-      user.cart.push({ product: productId, quantity: quantity || 1 });
+      user.cart.push({ product: productId, quantity: addQuantity });
     }
+
+    // Deduct from stock
+    product.stock -= addQuantity;
+    await product.save();
 
     await user.save();
 
@@ -49,6 +64,19 @@ const addToCart = async (req, res) => {
 const removeFromCart = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
+
+    // Find the item to restore its stock
+    const itemToRemove = user.cart.find(
+      (item) => item.product.toString() === req.params.productId,
+    );
+
+    if (itemToRemove) {
+      const product = await Product.findById(req.params.productId);
+      if (product) {
+        product.stock += itemToRemove.quantity;
+        await product.save();
+      }
+    }
 
     // Filter out the product we want to remove
     user.cart = user.cart.filter(
@@ -70,6 +98,16 @@ const removeFromCart = async (req, res) => {
 const clearCart = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
+
+    // Restore stock for all items
+    for (const item of user.cart) {
+      const product = await Product.findById(item.product);
+      if (product) {
+        product.stock += item.quantity;
+        await product.save();
+      }
+    }
+
     user.cart = [];
     await user.save();
     res.json({ message: "Cart cleared" });
