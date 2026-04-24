@@ -12,7 +12,7 @@ const MockPayment = () => {
 
   useEffect(() => {
     const processPayment = async () => {
-      const { address, total } = location.state || {};
+      const { address } = location.state || {};
 
       if (!address) {
         toast.error("Invalid payment request");

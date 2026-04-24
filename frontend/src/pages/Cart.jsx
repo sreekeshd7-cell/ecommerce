@@ -1,13 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
-import { toast } from "react-toastify";
-import API from "../api/axios";
 
 const Cart = () => {
-  const { cart, fetchCart, removeFromCart, clearCart } = useCart();
+  const { cart, fetchCart, removeFromCart } = useCart();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const [address, setAddress] = useState({
     address: "",
     city: "",
@@ -104,10 +101,10 @@ const Cart = () => {
           onClick={handleMockCheckout}
           className="btn-checkout"
           disabled={
-            loading || !address.address || !address.city || !address.postalCode
+            !address.address || !address.city || !address.postalCode
           }
         >
-          {loading ? "Processing..." : "Checkout & Pay"}
+          Checkout & Pay
         </button>
       </div>
     </div>
